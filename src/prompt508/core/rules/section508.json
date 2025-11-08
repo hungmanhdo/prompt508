@@ -1,0 +1,112 @@
+{
+  "description": "Section 508 Accessibility Guidelines for AI Prompt Output",
+  "source": "Section 508 of the Rehabilitation Act (29 U.S.C. § 794d)",
+  "accessibility_hints": {
+    "images": [
+      "Include descriptive alt text for all images",
+      "Describe the content and function of images, not just their appearance",
+      "For complex images (charts, diagrams), provide extended descriptions",
+      "Use empty alt text (alt='') for purely decorative images"
+    ],
+    "multimedia": [
+      "Provide captions for all audio content",
+      "Include transcripts for video and audio content",
+      "Ensure audio descriptions are available for visual content",
+      "Support keyboard-only navigation for video players"
+    ],
+    "documents": [
+      "Use proper heading structure (H1, H2, H3, etc.)",
+      "Provide document structure with semantic markup",
+      "Include table headers for data tables",
+      "Use lists (ordered/unordered) for list content",
+      "Ensure sufficient color contrast (WCAG 2.1 AA: 4.5:1 for text)",
+      "Don't rely on color alone to convey information"
+    ],
+    "links": [
+      "Use descriptive link text (avoid 'click here' or 'read more')",
+      "Indicate link purpose from link text alone",
+      "Distinguish links from surrounding text"
+    ],
+    "forms": [
+      "Associate labels with form controls",
+      "Provide clear instructions and error messages",
+      "Use fieldsets and legends for grouped controls",
+      "Ensure forms are keyboard accessible"
+    ],
+    "language": [
+      "Use plain language (target 8th grade reading level)",
+      "Define technical terms and acronyms on first use",
+      "Use active voice",
+      "Keep sentences concise (20 words or fewer when possible)",
+      "Use common words instead of jargon"
+    ],
+    "structure": [
+      "Organize content logically with clear headings",
+      "Use short paragraphs (3-5 sentences)",
+      "Use bullet points for lists",
+      "Provide white space for readability",
+      "Ensure proper reading order"
+    ]
+  },
+  "output_instructions": {
+    "default": "When generating content, ensure it follows accessibility best practices: use proper heading structure, provide alt text for images, use descriptive links, and write in plain language.",
+    "images": "For any images in the output, provide detailed alt text descriptions that convey the content and function, not just visual appearance.",
+    "data_viz": "For charts and data visualizations, provide both visual representation and text-based data tables or descriptions.",
+    "code": "For code snippets, include comments explaining functionality and ensure proper semantic markup if presented in documentation.",
+    "interactive": "For interactive elements, ensure keyboard accessibility and provide clear instructions for all input methods."
+  },
+  "wcag_levels": {
+    "A": "Minimum level of accessibility",
+    "AA": "Recommended level for government (Section 508 requirement)",
+    "AAA": "Highest level of accessibility"
+  },
+  "content_types": {
+    "text": {
+      "requirements": ["Plain language", "8th grade reading level", "Active voice", "Short sentences"],
+      "checks": ["readability_score", "jargon_detection", "tone_analysis"]
+    },
+    "images": {
+      "requirements": ["Alt text", "Extended descriptions for complex images", "Color contrast"],
+      "checks": ["alt_text_present", "descriptive_quality"]
+    },
+    "multimedia": {
+      "requirements": ["Captions", "Transcripts", "Audio descriptions"],
+      "checks": ["caption_present", "transcript_available"]
+    },
+    "links": {
+      "requirements": ["Descriptive text", "Context independent", "Distinguishable"],
+      "checks": ["link_text_quality", "avoid_generic_text"]
+    },
+    "forms": {
+      "requirements": ["Associated labels", "Clear instructions", "Error handling"],
+      "checks": ["label_association", "instruction_clarity"]
+    }
+  },
+  "common_violations": [
+    {
+      "issue": "Missing image descriptions",
+      "severity": "high",
+      "solution": "Add specific instruction to include detailed alt text"
+    },
+    {
+      "issue": "Complex jargon without definitions",
+      "severity": "medium",
+      "solution": "Request plain language or definitions for technical terms"
+    },
+    {
+      "issue": "Passive voice",
+      "severity": "low",
+      "solution": "Encourage active voice construction"
+    },
+    {
+      "issue": "Inadequate color contrast",
+      "severity": "high",
+      "solution": "Specify WCAG AA color contrast requirements"
+    },
+    {
+      "issue": "Non-descriptive links",
+      "severity": "medium",
+      "solution": "Request specific, contextual link text"
+    }
+  ]
+}

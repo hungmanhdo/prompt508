@@ -1,0 +1,52 @@
+{
+  "description": "Quick text replacements for common accessibility and readability improvements",
+  "version": "1.0",
+  "replacements": {
+    "click here": "view [specific content]",
+    "read more": "[specific topic] details",
+    "learn more": "explore [specific topic]",
+    "more info": "additional information about [topic]",
+    "this link": "[descriptive link text]",
+    "here": "[specific destination]",
+    "download": "download [file type and name]",
+    "video": "[descriptive video title]",
+    "image": "[image description]",
+    "see below": "see [specific section name]",
+    "above": "[specific section reference]",
+    "as mentioned": "as mentioned in [specific location]"
+  },
+  "patterns": [
+    {
+      "find": "\\b(very|really|extremely)\\s+",
+      "replace": "",
+      "reason": "Remove intensifiers for clearer writing"
+    },
+    {
+      "find": "\\s+",
+      "replace": " ",
+      "reason": "Normalize whitespace"
+    }
+  ],
+  "technical_simplifications": {
+    "authenticate": "log in",
+    "credentials": "username and password",
+    "deprecated": "no longer supported",
+    "instantiate": "create",
+    "iterate": "repeat",
+    "parameter": "setting",
+    "repository": "storage location",
+    "syntax": "format",
+    "verbose": "detailed",
+    "workflow": "process"
+  },
+  "accessibility_reminders": [
+    "Remember to include alt text for images",
+    "Use heading structure (H1, H2, H3) for organization",
+    "Provide captions or transcripts for multimedia",
+    "Use descriptive link text",
+    "Write in plain language (8th grade level)",
+    "Define acronyms on first use",
+    "Use active voice when possible",
+    "Keep sentences under 20 words when possible"
+  ]
+}

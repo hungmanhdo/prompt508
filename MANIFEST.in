@@ -1,0 +1,16 @@
+# Include important files
+include README.md
+include LICENSE
+include pyproject.toml
+
+# Include rule files
+recursive-include src/prompt508/core/rules *.json
+
+# Include examples
+recursive-include src/prompt508/examples *.py
+
+# Exclude unnecessary files
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store
+global-exclude *.swp
