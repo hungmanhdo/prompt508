@@ -26,14 +26,24 @@
 
 ## ✨ Features
 
+### Core Analysis & Optimization
 - **📊 Readability Analysis** - Computes Flesch-Kincaid grade level and multiple readability metrics
 - **📝 Jargon Detection** - Identifies technical terms, undefined acronyms, and complex language
 - **🎭 Tone Analysis** - Analyzes sentiment, formality, and passive voice usage
 - **♿ Accessibility Hints** - Injects Section 508 compliance reminders (alt text, captions, structure)
 - **🔧 Rule-Based Optimization** - Automatically rewrites prompts using plain language guidelines
-- **🤖 LLM Enhancement (Optional)** - Uses AI to improve prompt naturalness while maintaining compliance
-- **🖥️ CLI Interface** - Easy command-line tools for analysis and optimization
+
+### 🆕 Two-Stage AI Pipeline (NEW!)
+- **Stage 1: INPUT Enhancement** - Automatically adds Section 508 instructions to prompts (free)
+- **Stage 2: OUTPUT Validation & Fixing** - Checks and rewrites LLM outputs for compliance
+- **🤖 AI-Powered Rewriting** - Uses OpenAI to intelligently improve accessibility
+- **💰 Cost-Efficient** - Only ~$0.0001-0.0004 per request
+- **📈 Proven Results** - +24 point score improvements, 5.6 grade level reduction
+
+### Additional Features
+- **🖥️ CLI Interface** - Easy command-line tools for analysis, optimization, and rewriting
 - **🔒 Offline-First** - Works without external APIs by default (FedRAMP/Zero Trust ready)
+- **🔄 Smart Fallback** - Gracefully falls back to rule-based mode when no API key available
 
 ## 📦 Installation
 
@@ -206,6 +216,28 @@ prompt508 report "Your prompt text"
 prompt508 report --file prompt.txt --output report.txt
 ```
 
+#### Rewrite Command (NEW!)
+
+```bash
+# AI-powered rewriting (requires OPENAI_API_KEY in environment or .env)
+prompt508 rewrite "Utilize sophisticated methodology to facilitate implementation"
+
+# Rewrite from file
+prompt508 rewrite --file input.txt --output rewritten.txt
+
+# Use specific OpenAI model
+prompt508 rewrite "Complex text" --model gpt-4o
+
+# Provide API key directly
+prompt508 rewrite "Text" --api-key sk-proj-...
+
+# Skip analysis comparison
+prompt508 rewrite "Text" --no-analysis
+
+# Setup .env file for API key
+echo "OPENAI_API_KEY=sk-proj-your-key-here" > .env
+```
+
 ## 🔍 Core Capabilities
 
 ### 1. Readability Analysis
@@ -306,7 +338,90 @@ for prompt in prompts_to_check:
         print(f"✅ Prompt passes compliance: {prompt}\n")
 ```
 
-### Example 3: Individual Module Usage
+### Example 3: Two-Stage AI Pipeline (NEW!)
+
+```python
+from prompt508 import AccessibilityAdvisor
+from openai import OpenAI
+
+# Your LLM function
+def my_llm(prompt):
+    client = OpenAI()  # Uses OPENAI_API_KEY from environment
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+
+advisor = AccessibilityAdvisor()
+
+# Complete two-stage pipeline
+result = advisor.ensure_compliance(
+    prompt="Explain how APIs work",
+    llm_function=my_llm
+)
+
+print(f"Stages used: {result['stages_used']}")
+# Output: {'stage1_enhance': True, 'stage2_fix': True}
+
+print(f"Was fixed: {result['was_fixed']}")
+# Output: True (if Stage 2 fixing was needed)
+
+print(f"Final score: {result['compliance_score']}/100")
+# Output: 85.3/100
+
+print(f"Final output: {result['final_output']}")
+# Output: Clean, accessible text meeting Section 508 standards
+```
+
+**Manual stage-by-stage control:**
+
+```python
+# Stage 1: Enhance prompt with Section 508 instructions
+enhanced_prompt = advisor.enhance_prompt_for_508("Explain quantum computing")
+
+# Send to your LLM
+llm_output = my_llm(enhanced_prompt)
+
+# Stage 2: Validate the output
+validation = advisor.validate_output(llm_output)
+print(f"Score: {validation['score']}/100")
+print(f"Needs fixing: {validation['needs_fixing']}")
+
+# Stage 2: Fix if needed
+if validation['needs_fixing']:
+    fixed = advisor.fix_output(llm_output)
+    final_text = fixed['rewritten']
+    print(f"Cost: ${fixed['cost_usd']:.4f}")
+else:
+    final_text = llm_output
+
+print(f"Final: {final_text}")
+```
+
+### Example 4: AI-Powered Rewriting
+
+```python
+# Rewrite any text for accessibility (requires OpenAI API key)
+advisor = AccessibilityAdvisor()
+
+complex_text = "Utilize sophisticated methodology to facilitate implementation"
+
+result = advisor.rewrite_prompt(complex_text)
+
+if result['mode'] == 'ai':
+    print(f"Rewritten: {result['rewritten']}")
+    # Output: "Use this simple method to help with implementation"
+    
+    print(f"Improvements:")
+    print(f"  Score: {result['improvements']['overall_score']['before']} → "
+          f"{result['improvements']['overall_score']['after']}")
+    print(f"  Grade: {result['improvements']['readability_grade']['before']} → "
+          f"{result['improvements']['readability_grade']['after']}")
+    print(f"  Cost: ${result['cost_usd']:.4f}")
+```
+
+### Example 5: Individual Module Usage
 
 ```python
 from prompt508 import score_text, detect_jargon, analyze_tone
@@ -326,6 +441,19 @@ print(f"Suggestions: {jargon['suggestions']}")
 tone = analyze_tone(text)
 print(f"Sentiment: {tone['tone_classification']}")
 print(f"Formality: {tone['formality_score']}")
+```
+
+### Example 6: Comparison Demo
+
+**See the VALUE_PROPOSITION.md file for a complete comparison showing:**
+- **WITHOUT prompt508**: Score 56.7/100, Grade 13.8, 17 jargon terms
+- **WITH prompt508**: Score 80.7/100, Grade 8.2, 6 jargon terms
+- **Improvement**: +24 points, -5.6 grades, -11 jargon terms
+- **Cost**: Only $0.0004 per request
+
+Run the demo:
+```bash
+python demo_comparison.py
 ```
 
 ## ⚙️ Configuration

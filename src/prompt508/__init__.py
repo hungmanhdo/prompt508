@@ -6,7 +6,7 @@ A Python library for analyzing and optimizing AI prompts to ensure they meet
 U.S. Section 508 accessibility and plain-language compliance standards.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Hung Manh Do"
 __license__ = "MIT"
 
