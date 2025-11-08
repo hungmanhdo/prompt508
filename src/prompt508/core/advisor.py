@@ -214,6 +214,213 @@ class AccessibilityAdvisor:
 
         return result
 
+    def enhance_prompt_for_508(
+        self, prompt: str, strict: bool = False, content_type: Optional[str] = None
+    ) -> str:
+        """
+        Stage 1: Add Section 508 accessibility instructions to user's prompt.
+
+        This enhances the prompt before sending to LLM, instructing it to generate
+        accessible content that meets plain language and Section 508 requirements.
+
+        Args:
+            prompt: User's original prompt
+            strict: Whether to use strict compliance mode with additional requirements
+            content_type: Content type for specific guidance (images, multimedia, etc.)
+
+        Returns:
+            Enhanced prompt with Section 508 instructions appended
+        """
+        accessibility_instructions = f"""
+
+Please ensure your response follows these Section 508 accessibility guidelines:
+- Use plain language (target {self.target_grade}th grade reading level)
+- Define technical terms when first used
+- Avoid jargon and complex vocabulary
+- Use active voice instead of passive voice
+- Keep sentences under 20 words when possible
+- Use bullet points for lists
+- Provide clear, step-by-step instructions where applicable"""
+
+        if strict or self.strict_mode:
+            accessibility_instructions += """
+- Include descriptive alt text for any images mentioned
+- Use proper heading hierarchy (H1, H2, H3)
+- Ensure color is not the only way to convey information
+- Provide captions or transcripts for multimedia content"""
+
+        if content_type:
+            content_instructions = self.section508_rules.get("output_instructions", {})
+            if content_type in content_instructions:
+                accessibility_instructions += f"\n- {content_instructions[content_type]}"
+
+        return prompt + accessibility_instructions
+
+    def validate_output(self, output: str, threshold: float = 70.0) -> Dict[str, Any]:
+        """
+        Stage 2: Validate if LLM output meets Section 508 requirements.
+
+        Checks compliance and returns detailed validation results.
+
+        Args:
+            output: LLM-generated output to validate
+            threshold: Minimum score required to pass (default: 70.0)
+
+        Returns:
+            Dictionary containing:
+                - passes_compliance: Whether output meets all requirements
+                - score: Overall compliance score (0-100)
+                - meets_threshold: Whether score meets minimum threshold
+                - issues: List of specific issues found
+                - needs_fixing: Whether output should be rewritten
+                - readability_grade: Current reading grade level
+                - jargon_count: Number of jargon terms found
+                - recommendations: List of suggested improvements
+        """
+        analysis = self.analyze(output)
+
+        return {
+            "passes_compliance": analysis["passes_compliance"],
+            "score": analysis["overall_score"],
+            "meets_threshold": analysis["overall_score"] >= threshold,
+            "issues": analysis["issues"],
+            "needs_fixing": not analysis["passes_compliance"]
+            or analysis["overall_score"] < threshold,
+            "readability_grade": analysis["readability"]["flesch_kincaid_grade"],
+            "jargon_count": analysis["jargon"]["jargon_count"],
+            "recommendations": analysis["recommendations"],
+            "full_analysis": analysis,
+        }
+
+    def fix_output(
+        self,
+        output: str,
+        api_key: Optional[str] = None,
+        model: str = "gpt-4o-mini",
+    ) -> Dict[str, Any]:
+        """
+        Stage 2: Fix non-compliant LLM output.
+
+        This is an alias for rewrite_prompt() with clearer naming for the
+        two-stage pipeline workflow.
+
+        Args:
+            output: Non-compliant LLM output to fix
+            api_key: OpenAI API key (optional)
+            model: OpenAI model to use (default: gpt-4o-mini)
+
+        Returns:
+            Same as rewrite_prompt(): dictionary with rewritten text and analysis
+        """
+        return self.rewrite_prompt(output, api_key=api_key, model=model)
+
+    def ensure_compliance(
+        self,
+        prompt: str,
+        llm_function: callable,
+        api_key: Optional[str] = None,
+        model: str = "gpt-4o-mini",
+        threshold: float = 70.0,
+        max_retries: int = 1,
+    ) -> Dict[str, Any]:
+        """
+        Complete two-stage accessibility pipeline.
+
+        Stage 1: Enhance prompt with Section 508 instructions
+        Stage 2: Validate output and fix if needed
+
+        Args:
+            prompt: User's original prompt
+            llm_function: Callable that takes prompt string and returns LLM response
+            api_key: OpenAI API key for Stage 2 fixing (optional)
+            model: Model to use for Stage 2 fixing (default: gpt-4o-mini)
+            threshold: Minimum compliance score required (default: 70.0)
+            max_retries: Max times to retry with enhanced prompt (not implemented yet)
+
+        Returns:
+            Dictionary containing:
+                - final_output: Final compliant text
+                - original_prompt: User's original prompt
+                - enhanced_prompt: Prompt with 508 instructions
+                - llm_output: Raw LLM response
+                - was_fixed: Whether Stage 2 fixing was needed
+                - compliance_score: Final compliance score
+                - validation: Stage 2 validation results
+                - stages_used: Which stages were executed
+                - cost_usd: Total cost if AI fixing was used
+
+        Example:
+            >>> def my_llm(prompt):
+            ...     return openai.chat.completions.create(
+            ...         messages=[{"role": "user", "content": prompt}]
+            ...     ).choices[0].message.content
+            ...
+            >>> advisor = AccessibilityAdvisor()
+            >>> result = advisor.ensure_compliance(
+            ...     prompt="Explain quantum computing",
+            ...     llm_function=my_llm
+            ... )
+            >>> print(result["final_output"])
+        """
+        # Stage 1: Enhance prompt with accessibility instructions
+        enhanced_prompt = self.enhance_prompt_for_508(prompt)
+
+        # Call LLM with enhanced prompt
+        llm_output = llm_function(enhanced_prompt)
+
+        # Stage 2: Validate output
+        validation = self.validate_output(llm_output, threshold=threshold)
+
+        result = {
+            "original_prompt": prompt,
+            "enhanced_prompt": enhanced_prompt,
+            "llm_output": llm_output,
+            "validation": validation,
+        }
+
+        if not validation["needs_fixing"]:
+            # Success! Output is already compliant
+            result.update(
+                {
+                    "final_output": llm_output,
+                    "was_fixed": False,
+                    "compliance_score": validation["score"],
+                    "stages_used": {"stage1_enhance": True, "stage2_fix": False},
+                }
+            )
+        else:
+            # Stage 2: Fix non-compliant output
+            fixed = self.fix_output(llm_output, api_key=api_key, model=model)
+
+            if fixed["mode"] == "ai":
+                result.update(
+                    {
+                        "final_output": fixed["rewritten"],
+                        "was_fixed": True,
+                        "compliance_score": fixed.get("analysis_after", {}).get(
+                            "overall_score", validation["score"]
+                        ),
+                        "stages_used": {"stage1_enhance": True, "stage2_fix": True},
+                        "fix_details": fixed,
+                        "cost_usd": fixed.get("cost_usd", 0),
+                    }
+                )
+            else:
+                # Fallback to rule-based if AI not available
+                result.update(
+                    {
+                        "final_output": llm_output,  # Keep original if can't fix
+                        "was_fixed": False,
+                        "compliance_score": validation["score"],
+                        "stages_used": {"stage1_enhance": True, "stage2_fix": False},
+                        "fix_attempted": True,
+                        "fix_mode": "rule-based",
+                        "suggestions": fixed.get("suggestions", []),
+                    }
+                )
+
+        return result
+
     def _calculate_improvements(self, before: Dict, after: Dict) -> Dict[str, Any]:
         """
         Calculate improvement metrics between before and after analysis.
