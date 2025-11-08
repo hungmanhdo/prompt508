@@ -21,13 +21,11 @@ from .core.accessibility import AccessibilityInjector, inject_accessibility_hint
 __all__ = [
     # Main advisor class
     "AccessibilityAdvisor",
-    
     # Individual analyzers
     "ReadabilityAnalyzer",
     "JargonDetector",
     "ToneAnalyzer",
     "AccessibilityInjector",
-    
     # Convenience functions
     "score_text",
     "detect_jargon",
