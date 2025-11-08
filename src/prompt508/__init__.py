@@ -16,6 +16,7 @@ from .core.readability import ReadabilityAnalyzer, score_text
 from .core.jargon import JargonDetector, detect_jargon
 from .core.tone import ToneAnalyzer, analyze_tone
 from .core.accessibility import AccessibilityInjector, inject_accessibility_hints
+from .core.rewriter import PromptRewriter, rewrite_prompt
 
 # Define public API
 __all__ = [
@@ -26,9 +27,12 @@ __all__ = [
     "JargonDetector",
     "ToneAnalyzer",
     "AccessibilityInjector",
+    # AI-powered rewriter
+    "PromptRewriter",
     # Convenience functions
     "score_text",
     "detect_jargon",
     "analyze_tone",
     "inject_accessibility_hints",
+    "rewrite_prompt",
 ]

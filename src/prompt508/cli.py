@@ -170,6 +170,126 @@ def optimize(
 
 
 @app.command()
+def rewrite(
+    text: Optional[str] = typer.Argument(None, help="Text to rewrite (or use --file)"),
+    file: Optional[Path] = typer.Option(
+        None, "--file", "-f", help="File containing prompt to rewrite"
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Output file for rewritten prompt"
+    ),
+    model: str = typer.Option(
+        "gpt-4o-mini", "--model", "-m", help="OpenAI model to use (gpt-4o-mini, gpt-4o, etc.)"
+    ),
+    api_key: Optional[str] = typer.Option(
+        None, "--api-key", help="OpenAI API key (or set OPENAI_API_KEY env var)"
+    ),
+    show_analysis: bool = typer.Option(
+        True, "--analysis/--no-analysis", help="Show before/after analysis"
+    ),
+    show_diff: bool = typer.Option(False, "--diff", "-d", help="Show side-by-side comparison"),
+):
+    """
+    Rewrite a prompt using AI for accessibility and plain language compliance.
+
+    Automatically uses OpenAI if API key is available (from env var or .env file),
+    otherwise provides rule-based suggestions.
+
+    Examples:
+
+        prompt508 rewrite "Utilize this methodology to facilitate implementation"
+
+        prompt508 rewrite --file prompt.txt --output rewritten.txt
+
+        prompt508 rewrite "Complex text" --model gpt-4o --api-key sk-...
+
+    Setup .env file:
+        Create a .env file in your project with:
+        OPENAI_API_KEY=sk-proj-your-key-here
+    """
+    # Get text from file or argument
+    if file:
+        if not file.exists():
+            console.print(f"[red]Error: File not found: {file}[/red]")
+            raise typer.Exit(1)
+        text = file.read_text(encoding="utf-8")
+    elif not text:
+        console.print("[red]Error: Provide text to rewrite or use --file option[/red]")
+        raise typer.Exit(1)
+
+    # Initialize advisor
+    try:
+        advisor = AccessibilityAdvisor()
+    except Exception as e:
+        console.print(f"[red]Error initializing advisor: {e}[/red]")
+        console.print("\n[yellow]Note: Make sure spaCy model is installed:[/yellow]")
+        console.print("  python -m spacy download en_core_web_sm")
+        raise typer.Exit(1)
+
+    # Rewrite prompt
+    with console.status("[bold green]Rewriting prompt..."):
+        result = advisor.rewrite_prompt(
+            text, api_key=api_key, model=model, analyze_improvement=show_analysis
+        )
+
+    # Check if AI mode or rule-based
+    if result["mode"] == "ai":
+        console.print("\n[bold green]✓ AI Rewriting Complete[/bold green]")
+        console.print(f"[dim]Model: {result['model']}[/dim]")
+        console.print(f"[dim]Cost: ${result['cost_usd']:.4f}[/dim]")
+
+        # Show original
+        console.print("\n[bold cyan]Original:[/bold cyan]")
+        console.print(Panel(text, border_style="blue"))
+
+        # Show rewritten
+        console.print("\n[bold green]Rewritten:[/bold green]")
+        console.print(Panel(result["rewritten"], border_style="green"))
+
+        # Show analysis if requested
+        if show_analysis and "improvements" in result:
+            _display_improvements(result["improvements"])
+
+        # Save to file if requested
+        if output:
+            output.write_text(result["rewritten"], encoding="utf-8")
+            console.print(f"\n[green]✓ Rewritten prompt saved to: {output}[/green]")
+
+    else:
+        # Rule-based mode
+        console.print("\n[yellow]ℹ  Using rule-based suggestions[/yellow]")
+        console.print(f"[dim]{result.get('message', '')}[/dim]")
+
+        console.print("\n[bold cyan]Original:[/bold cyan]")
+        console.print(Panel(text, border_style="blue"))
+
+        if result.get("suggestions"):
+            console.print("\n[bold yellow]Suggestions:[/bold yellow]")
+            suggestions_table = Table()
+            suggestions_table.add_column("Original", style="red")
+            suggestions_table.add_column("→", style="dim")
+            suggestions_table.add_column("Replacement", style="green")
+            suggestions_table.add_column("Reason", style="cyan")
+
+            for suggestion in result["suggestions"][:15]:
+                suggestions_table.add_row(
+                    suggestion["original"],
+                    "→",
+                    suggestion["replacement"],
+                    suggestion.get("reason", ""),
+                )
+
+            console.print(suggestions_table)
+        else:
+            console.print("\n[green]✓ No issues found![/green]")
+
+        console.print(
+            "\n[bold cyan]💡 Tip:[/bold cyan] Set OPENAI_API_KEY in .env for AI-powered rewriting"
+        )
+        console.print("[dim]Create a .env file with: OPENAI_API_KEY=sk-proj-your-key[/dim]")
+
+
+@app.command()
 def report(
     text: Optional[str] = typer.Argument(None, help="Text to analyze (or use --file)"),
     file: Optional[Path] = typer.Option(None, "--file", "-f", help="File containing prompt"),
@@ -296,6 +416,58 @@ Passive Voice: {tone['passive_voice_count']} instances
         console.print(f"  {i}. {rec}")
 
     console.print()
+
+
+def _display_improvements(improvements: dict) -> None:
+    """Display improvement metrics in a formatted table."""
+    console.print("\n[bold]📊 Improvements:[/bold]")
+
+    improvements_table = Table()
+    improvements_table.add_column("Metric", style="cyan")
+    improvements_table.add_column("Before", style="red")
+    improvements_table.add_column("After", style="green")
+    improvements_table.add_column("Change", style="yellow")
+
+    # Overall score
+    score = improvements["overall_score"]
+    change_symbol = "+" if score["change"] >= 0 else ""
+    improvements_table.add_row(
+        "Overall Score",
+        f"{score['before']}/100",
+        f"{score['after']}/100",
+        f"{change_symbol}{score['change']}",
+    )
+
+    # Readability grade
+    grade = improvements["readability_grade"]
+    change_symbol = "-" if grade["change"] < 0 else "+"
+    improvements_table.add_row(
+        "Reading Grade",
+        f"{grade['before']}",
+        f"{grade['after']}",
+        f"{change_symbol}{abs(grade['change'])}",
+    )
+
+    # Jargon count
+    jargon = improvements["jargon_count"]
+    change_symbol = "" if jargon["change"] >= 0 else ""
+    improvements_table.add_row(
+        "Jargon Terms", str(jargon["before"]), str(jargon["after"]), str(jargon["change"])
+    )
+
+    # Passive voice
+    passive = improvements["passive_voice"]
+    improvements_table.add_row(
+        "Passive Voice",
+        str(passive["before"]),
+        str(passive["after"]),
+        str(passive["change"]),
+    )
+
+    console.print(improvements_table)
+
+    if improvements["now_passes_compliance"]:
+        console.print("\n[bold green]✓ Now passes Section 508 compliance![/bold green]")
 
 
 if __name__ == "__main__":

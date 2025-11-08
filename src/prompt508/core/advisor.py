@@ -159,6 +159,101 @@ class AccessibilityAdvisor:
 
         return optimized
 
+    def rewrite_prompt(
+        self,
+        prompt: str,
+        api_key: Optional[str] = None,
+        model: str = "gpt-4o-mini",
+        custom_instructions: Optional[str] = None,
+        analyze_improvement: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Rewrite a prompt for accessibility and plain language compliance.
+
+        Automatically uses AI-powered rewriting if OPENAI_API_KEY is available,
+        otherwise provides rule-based suggestions.
+
+        Args:
+            prompt: Input prompt to rewrite
+            api_key: OpenAI API key (optional, will check env vars and .env)
+            model: OpenAI model to use (default: gpt-4o-mini)
+            custom_instructions: Additional instructions for AI (optional)
+            analyze_improvement: Whether to analyze and compare before/after (default: True)
+
+        Returns:
+            Dictionary containing:
+                - original: Original prompt text
+                - rewritten: AI-rewritten text (if AI mode)
+                - suggestions: Rule-based suggestions (if rule-based mode)
+                - mode: "ai" or "rule-based"
+                - model: Model used (if AI mode)
+                - cost_usd: Estimated cost (if AI mode)
+                - analysis_before: Analysis of original (if analyze_improvement=True)
+                - analysis_after: Analysis of rewritten (if analyze_improvement=True)
+                - improvements: Improvement metrics (if analyze_improvement=True)
+        """
+        from .rewriter import PromptRewriter
+
+        # Analyze original if requested
+        analysis_before = None
+        if analyze_improvement:
+            analysis_before = self.analyze(prompt)
+
+        # Rewrite using AI or rules
+        rewriter = PromptRewriter(api_key=api_key, model=model)
+        result = rewriter.rewrite(prompt, custom_instructions=custom_instructions)
+
+        # Analyze rewritten text if AI mode and requested
+        if analyze_improvement and result["mode"] == "ai":
+            analysis_after = self.analyze(result["rewritten"])
+            improvements = self._calculate_improvements(analysis_before, analysis_after)
+
+            result["analysis_before"] = analysis_before
+            result["analysis_after"] = analysis_after
+            result["improvements"] = improvements
+
+        return result
+
+    def _calculate_improvements(self, before: Dict, after: Dict) -> Dict[str, Any]:
+        """
+        Calculate improvement metrics between before and after analysis.
+
+        Args:
+            before: Analysis results before rewriting
+            after: Analysis results after rewriting
+
+        Returns:
+            Dictionary with improvement metrics
+        """
+        return {
+            "overall_score": {
+                "before": before["overall_score"],
+                "after": after["overall_score"],
+                "change": round(after["overall_score"] - before["overall_score"], 1),
+            },
+            "readability_grade": {
+                "before": before["readability"]["flesch_kincaid_grade"],
+                "after": after["readability"]["flesch_kincaid_grade"],
+                "change": round(
+                    after["readability"]["flesch_kincaid_grade"]
+                    - before["readability"]["flesch_kincaid_grade"],
+                    1,
+                ),
+            },
+            "jargon_count": {
+                "before": before["jargon"]["jargon_count"],
+                "after": after["jargon"]["jargon_count"],
+                "change": after["jargon"]["jargon_count"] - before["jargon"]["jargon_count"],
+            },
+            "passive_voice": {
+                "before": before["tone"]["passive_voice_count"],
+                "after": after["tone"]["passive_voice_count"],
+                "change": after["tone"]["passive_voice_count"]
+                - before["tone"]["passive_voice_count"],
+            },
+            "now_passes_compliance": after["passes_compliance"],
+        }
+
     def rewrite_with_llm(
         self,
         prompt: str,
