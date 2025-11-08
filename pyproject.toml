@@ -10,13 +10,12 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "VNStars", email = "your.email@example.com"}
+    {name = "Hung Manh Do", email = "reach.hudo@gmail.com"}
 ]
 keywords = ["accessibility", "section-508", "plain-language", "ai", "prompts", "nlp", "compliance"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Intended Audience :: Government",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -53,10 +52,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/vnstars/prompt508"
-Documentation = "https://github.com/vnstars/prompt508#readme"
-Repository = "https://github.com/vnstars/prompt508"
-Issues = "https://github.com/vnstars/prompt508/issues"
+Homepage = "https://github.com/hungmanhdo/prompt508"
+Documentation = "https://github.com/hungmanhdo/prompt508#readme"
+Repository = "https://github.com/hungmanhdo/prompt508"
+Issues = "https://github.com/hungmanhdo/prompt508/issues"
 
 [project.scripts]
 prompt508 = "prompt508.cli:app"

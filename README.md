@@ -359,7 +359,7 @@ When optimizing, specify content type for targeted hints:
 
 ```bash
 # Clone the repository
-git clone https://github.com/vnstars/prompt508.git
+git clone https://github.com/hungmanhdo/prompt508.git
 cd prompt508
 
 # Install in development mode with all dependencies
@@ -427,8 +427,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/vnstars/prompt508/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/vnstars/prompt508/discussions)
+- **Issues**: [GitHub Issues](https://github.com/hungmanhdo/prompt508/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/hungmanhdo/prompt508/discussions)
 
 ---
 

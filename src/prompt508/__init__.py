@@ -7,7 +7,7 @@ U.S. Section 508 accessibility and plain-language compliance standards.
 """
 
 __version__ = "0.1.0"
-__author__ = "VNStars"
+__author__ = "Hung Manh Do"
 __license__ = "MIT"
 
 # Import main classes for convenience
